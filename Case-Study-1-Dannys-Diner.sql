@@ -160,3 +160,38 @@ INNER JOIN dannys_diner.members mb
     AND s.order_date >= mb.join_date
 WHERE extract(month from s.order_date) = 1
 GROUP BY s.customer_id;
+
+
+--- 11. Join all the things
+
+SELECT
+    s.customer_id,
+    cast(s.order_date as varchar(10)) as order_date,
+    m.product_name,
+    m.price,
+    case when mb.customer_id is not null then 'Y' else 'N' end as member
+FROM dannys_diner.sales s
+INNER JOIN dannys_diner.menu m
+    ON s.product_id = m.product_id
+LEFT JOIN dannys_diner.members mb
+    ON s.customer_id = mb.customer_id;
+    
+
+--- 12. Rank all the things
+
+SELECT
+    s.customer_id,
+    cast(s.order_date as varchar(10)) as order_date,
+    m.product_name,
+    m.price,
+    case when mb.customer_id is not null then 'Y' else 'N' end as member,
+    case when mb.customer_id is NULL then NULL
+         else DENSE_RANK() OVER (PARTITION BY mb.customer_id ORDER BY s.order_date) 
+    end AS ranking
+FROM dannys_diner.sales s
+INNER JOIN dannys_diner.menu m
+    ON s.product_id = m.product_id
+LEFT JOIN dannys_diner.members mb
+    ON s.customer_id = mb.customer_id
+    AND s.order_date >= mb.join_date
+ORDER BY s.customer_id, order_date, m.product_name
